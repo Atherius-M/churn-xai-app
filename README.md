@@ -3,6 +3,7 @@
 **Projet Challenge 1** — Data Mining, Filières II3-IA & II3-IF, ENSI, 2026-2027
 Cas métier : **Télécom — Attrition client** (Telco Customer Churn, IBM/Kaggle)
 
+**Dépôt GitHub :** https://github.com/Atherius-M/churn-xai-app
 **Démo en ligne :** _[lien Streamlit Community Cloud / Hugging Face Spaces — à ajouter après déploiement]_
 **API en ligne :** _[lien de l'API FastAPI déployée — à ajouter après déploiement]_
 
