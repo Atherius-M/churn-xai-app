@@ -63,7 +63,12 @@ def schema():
     _require_model()
     metadata = STATE["metadata"]
     example = STATE["X_background"].iloc[0].to_dict()
-    return {**metadata, "example_row": example}
+    known_rows = pd.concat([STATE["X_background"], STATE["X_sample"]])
+    category_values = {
+        c: sorted(known_rows[c].dropna().astype(str).unique().tolist())
+        for c in metadata["categorical_cols"]
+    }
+    return {**metadata, "example_row": example, "category_values": category_values}
 
 
 @app.post("/predict")
@@ -96,6 +101,9 @@ def explain_local(req: PredictRequest):
 
     synthesis = explain_mod.synthesis_sentence(shap_row, proba, metadata["threshold"])
 
+    comparison = explain_mod.compare_shap_lime(shap_row, lime_dict, feature_cols)
+    comparison["sentence"] = explain_mod.comparison_sentence(comparison)
+
     return {
         "probability": proba,
         "decision": decision,
@@ -103,6 +111,7 @@ def explain_local(req: PredictRequest):
         "shap": shap_row.to_dict(),
         "lime": lime_dict,
         "synthesis": synthesis,
+        "comparison": comparison,
     }
 
 

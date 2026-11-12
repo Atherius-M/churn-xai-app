@@ -336,11 +336,20 @@ elif page == "5. Explicabilite":
             row_values = X_test.loc[idx].to_dict()
         else:
             row_values = {}
+            category_values = schema.get("category_values", {})
+            full_df = st.session_state.get("df")
             cols = st.columns(3)
             for i, feat in enumerate(feature_cols):
                 default = example[feat]
                 with cols[i % 3]:
-                    if isinstance(default, (int, float)):
+                    if feat in category_values:
+                        # Liste deroulante : evite les fautes de frappe qui fausseraient la prediction
+                        options = category_values[feat]
+                        if full_df is not None and feat in full_df.columns:
+                            options = sorted(set(options) | set(full_df[feat].dropna().astype(str)))
+                        default_idx = options.index(str(default)) if str(default) in options else 0
+                        row_values[feat] = st.selectbox(feat, options, index=default_idx, key=f"local_{feat}")
+                    elif isinstance(default, (int, float)):
                         row_values[feat] = st.number_input(feat, value=float(default), key=f"local_{feat}")
                     else:
                         row_values[feat] = st.text_input(feat, value=str(default), key=f"local_{feat}")
@@ -364,3 +373,23 @@ elif page == "5. Explicabilite":
                 st.plotly_chart(viz_mod.waterfall_figure(resp["shap"]), use_container_width=True)
             with col2:
                 st.plotly_chart(viz_mod.lime_bar_figure(resp["lime"]), use_container_width=True)
+
+            comp = resp.get("comparison")
+            if comp:
+                st.subheader("Comparaison SHAP / LIME")
+                st.write(comp["sentence"])
+                st.caption(
+                    "Les contributions SHAP des colonnes one-hot et les regles LIME sont regroupees par "
+                    "variable d'origine. Rang 1 = variable la plus influente. LIME n'explique que ses "
+                    "10 variables principales (vide = absente du top LIME)."
+                )
+                comp_df = pd.DataFrame(comp["rows"]).head(10)
+                comp_df["meme_signe"] = comp_df["meme_signe"].map({True: "oui", False: "non"}).fillna("-")
+                st.dataframe(
+                    comp_df.rename(columns={
+                        "variable": "Variable", "shap": "SHAP", "rang_shap": "Rang SHAP",
+                        "lime": "LIME", "rang_lime": "Rang LIME", "meme_signe": "Meme signe",
+                    }),
+                    hide_index=True,
+                    use_container_width=True,
+                )

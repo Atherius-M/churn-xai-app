@@ -111,8 +111,8 @@ superposées, matrice de confusion par modèle, curseur de seuil de décision av
 | Modèle | AUC-ROC | PR-AUC | Précision | Rappel | F1 |
 |---|---|---|---|---|---|
 | **Régression logistique** | **0.842** | 0.632 | 0.657 | 0.559 | 0.604 |
-| XGBoost | 0.833 | 0.640 | 0.630 | 0.505 | 0.561 |
-| Arbre de décision | 0.830 | 0.648 | 0.535 | 0.567 | 0.599 |
+| XGBoost | 0.833 | 0.649 | 0.630 | 0.505 | 0.561 |
+| Arbre de décision | 0.830 | 0.648 | 0.635 | 0.567 | 0.599 |
 | K plus proches voisins | 0.822 | 0.613 | 0.585 | 0.564 | 0.574 |
 | Random Forest | 0.817 | 0.606 | 0.607 | 0.479 | 0.535 |
 
@@ -127,7 +127,10 @@ SHAP summary (beeswarm), graphique de dépendance SHAP.
 ![Module 5 — Beeswarm](screenshots/module5_beeswarm.jpg)
 
 **Explications locales** : sélection d'un individu du jeu de test (ou saisie manuelle), probabilité
-et décision, SHAP waterfall, explication LIME, phrase de synthèse générée automatiquement.
+et décision, SHAP waterfall, explication LIME, **tableau de comparaison SHAP / LIME** (rang et
+signe de chaque variable d'origine, recouvrement du top 5, corrélation des rangs) et phrase de
+synthèse générée automatiquement. En saisie manuelle, les variables catégorielles sont proposées
+en listes déroulantes (valeurs connues du modèle).
 
 ![Module 5 — Local](screenshots/module5_local.jpg)
 
@@ -137,10 +140,10 @@ Service documenté (OpenAPI/Swagger), appelé par le Module 5 :
 | Endpoint | Description |
 |---|---|
 | `GET /health` | état du service et du modèle chargé |
-| `GET /schema` | colonnes attendues + exemple de ligne |
+| `GET /schema` | colonnes attendues, exemple de ligne, modalités des variables catégorielles |
 | `POST /predict` | `{"features": {...}}` → probabilité + décision |
 | `GET /explain/global` | importances natives, par permutation, valeurs SHAP sur échantillon |
-| `POST /explain/local` | `{"features": {...}}` → SHAP waterfall, LIME, phrase de synthèse |
+| `POST /explain/local` | `{"features": {...}}` → SHAP waterfall, LIME, comparaison SHAP/LIME, phrase de synthèse |
 
 ![Module 6 — API docs](screenshots/module6_api_docs.jpg)
 
@@ -152,10 +155,14 @@ inspection rapide sans lancer l'application.
 
 ## 7. Analyse critique (voir aussi le one-pager)
 
-- **Cohérence SHAP/LIME :** sur les individus testés, SHAP et LIME s'accordent sur le signe et
-  l'ordre des principales variables (`tenure`, `Contract`, `InternetService`), ce qui renforce la
-  confiance dans l'explication. Une divergence serait un signal d'instabilité du modèle local
-  à investiguer.
+- **Cohérence SHAP/LIME :** mesurée sur 40 clients du jeu de test (régression logistique), après
+  regroupement des colonnes one-hot SHAP par variable d'origine : même signe pour 399/400
+  contributions, 3,9 variables communes en moyenne dans le top 5, corrélation des rangs médiane
+  0,77. Les deux méthodes s'accordent sur le sens des effets ; l'ordre exact varie légèrement
+  (LIME discrétise les variables continues). Le Module 5 affiche cette comparaison pour chaque
+  individu ; une forte divergence serait un signal d'instabilité locale à investiguer.
+  Globalement, `tenure` domine nettement, suivie de `MonthlyCharges`, `Contract` et
+  `InternetService`.
 - **Variables sensibles :** `gender` et `SeniorCitizen` figurent dans le jeu de données et sont
   utilisées par le modèle ; leur importance (native et par permutation) reste cependant faible
   comparée à `tenure` ou `Contract`. Un déploiement réel devrait tester l'équité du score par
@@ -184,4 +191,4 @@ inspection rapide sans lancer l'application.
 - [x] Module 5 — Explainable AI (SHAP, LIME)
 - [x] Module 6 — API FastAPI
 - [ ] Déploiement cloud (Streamlit Community Cloud / HF Spaces)
-- [ ] One-pager PDF — voir [`one_pager.pdf`](one_pager.pdf)
+- [x] One-pager PDF — voir [`one_pager.pdf`](one_pager.pdf)

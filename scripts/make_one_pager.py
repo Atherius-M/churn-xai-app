@@ -52,8 +52,8 @@ story.append(Paragraph(
 table_data = [
     ["Modèle", "AUC-ROC", "PR-AUC", "Précision", "Rappel", "F1"],
     ["Régression logistique", "0.842", "0.632", "0.657", "0.559", "0.604"],
-    ["XGBoost", "0.833", "0.640", "0.630", "0.505", "0.561"],
-    ["Arbre de décision", "0.830", "0.648", "0.535", "0.567", "0.599"],
+    ["XGBoost", "0.833", "0.649", "0.630", "0.505", "0.561"],
+    ["Arbre de décision", "0.830", "0.648", "0.635", "0.567", "0.599"],
     ["K plus proches voisins", "0.822", "0.613", "0.585", "0.564", "0.574"],
     ["Random Forest", "0.817", "0.606", "0.607", "0.479", "0.535"],
 ]
@@ -74,11 +74,14 @@ story.append(Spacer(1, 6))
 
 story.append(Paragraph("Explications clés (SHAP / LIME)", h2))
 story.append(Paragraph(
-    "Globalement, les trois variables dominantes (importance native, permutation, et SHAP) sont "
-    "<b>tenure</b> (ancienneté), <b>Contract</b> (type de contrat) et <b>InternetService</b> "
-    "(type de connexion internet) — un client récent, en contrat mensuel, avec fibre optique, "
-    "présente le risque de churn le plus élevé. Sur les individus testés, SHAP et LIME s'accordent "
-    "sur le signe et l'ordre de ces variables, ce qui renforce la confiance dans l'explication locale. "
+    "Globalement, <b>tenure</b> (ancienneté) domine nettement (importance par permutation 0.147 "
+    "en AUC), suivie de <b>MonthlyCharges</b>, <b>Contract</b> (type de contrat) et "
+    "<b>InternetService</b> (type de connexion) — un client récent, en contrat mensuel, avec fibre "
+    "optique, présente le risque de churn le plus élevé. Comparaison SHAP/LIME sur 40 clients du jeu "
+    "de test, après regroupement des colonnes one-hot par variable d'origine : même signe pour "
+    "399/400 contributions, 3,9 variables communes en moyenne dans le top 5, corrélation des rangs "
+    "médiane 0,77. Les deux méthodes s'accordent donc sur le sens des effets ; l'ordre exact varie "
+    "légèrement (LIME discrétise les variables continues). "
     "Exemple de phrase de synthèse générée automatiquement : <i>&laquo;Ce client a risque de depart "
     "faible (probabilite 4.5%), principalement a cause de : tenure (diminue le risque), TotalCharges "
     "(augmente le risque), MonthlyCharges (diminue le risque).&raquo;</i>",
