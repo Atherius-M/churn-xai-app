@@ -60,6 +60,7 @@ def confusion_matrix_figure(y_true, y_proba, threshold: float) -> go.Figure:
         z=cm, x=labels, y=labels, text=cm, texttemplate="%{text}", colorscale="Blues",
     ))
     fig.update_layout(title="Matrice de confusion", xaxis_title="Predit", yaxis_title="Reel")
+    fig.update_yaxes(autorange="reversed")  # disposition standard : vrais negatifs en haut a gauche
     return fig
 
 

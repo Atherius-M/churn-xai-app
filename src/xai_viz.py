@@ -39,7 +39,8 @@ def beeswarm_figure(shap_values: list, feature_values: dict, feature_names: list
             hovertemplate=f"{feat}<br>SHAP=%{{x:.4f}}<extra></extra>",
         ))
     fig.update_yaxes(tickmode="array", tickvals=list(range(len(order))),
-                      ticktext=[feature_names[i] for i in order])
+                      ticktext=[feature_names[i] for i in order],
+                      autorange="reversed")  # variable la plus importante en haut
     fig.update_layout(title="SHAP summary (beeswarm)", xaxis_title="Impact SHAP sur la prediction")
     return fig
 

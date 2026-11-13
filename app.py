@@ -7,6 +7,7 @@ from src import data as data_mod
 from src import evaluate as eval_mod
 from src import explain as explain_mod
 from src import export as export_mod
+from src import guide
 from src import models as models_mod
 from src import prep as prep_mod
 from src import xai_viz as viz_mod
@@ -21,6 +22,8 @@ for key in ["df", "target_col", "X_train", "X_test", "y_train", "y_test", "prepr
 if st.session_state["trained_models"] is None:
     st.session_state["trained_models"] = {}
 
+guide.sidebar()
+
 page = st.sidebar.radio(
     "Modules",
     ["1. Donnees", "2. Preparation", "3. Modelisation", "4. Evaluation", "5. Explicabilite"],
@@ -29,6 +32,10 @@ page = st.sidebar.radio(
 # ---------------------------------------------------------------- Module 1
 if page == "1. Donnees":
     st.title("Module 1 - Donnees")
+    guide.page("m1")
+    guide.terms(["churn", "target variable (Churn)", "dataset", "Telco Customer Churn", "kagglehub", "CSV",
+                 "tenure", "Contract", "MonthlyCharges / TotalCharges", "descriptive statistics",
+                 "missing values (NaN)", "class balance / imbalance", "correlation", "sensitive variables"])
 
     col1, col2 = st.columns(2)
     with col1:
@@ -55,19 +62,24 @@ if page == "1. Donnees":
         default_idx = list(df.columns).index(data_mod.DEFAULT_TARGET) if data_mod.DEFAULT_TARGET in df.columns else 0
         target_col = st.selectbox("Choisir la variable cible", df.columns, index=default_idx)
         st.session_state["target_col"] = target_col
+        guide.chart("m1_target")
 
         st.subheader("Apercu des donnees")
         st.dataframe(df.head(20))
+        guide.chart("m1_preview")
 
         st.subheader("Statistiques descriptives")
         st.dataframe(df.describe(include="all").transpose())
+        guide.chart("m1_describe")
 
         st.subheader("Valeurs manquantes")
         missing = df.isna().sum()
         st.dataframe(missing[missing > 0].rename("valeurs manquantes"))
+        guide.chart("m1_missing")
 
         st.subheader("Proportion de chaque classe")
         st.dataframe(data_mod.class_balance(df, target_col))
+        guide.chart("m1_balance")
 
         st.subheader("Visualisations exploratoires")
         numeric_cols, categorical_cols = prep_mod.split_feature_types(df.drop(columns=[target_col]))
@@ -79,17 +91,23 @@ if page == "1. Donnees":
             rate = df.groupby(var)[target_col].mean().reset_index()
             fig = px.bar(rate, x=var, y=target_col, title=f"Taux de classe positive par {var}")
         st.plotly_chart(fig, use_container_width=True)
+        guide.chart("m1_explore")
 
         if numeric_cols:
             st.subheader("Correlations (variables numeriques)")
             corr = df[numeric_cols + [target_col]].corr(numeric_only=True)
             st.plotly_chart(px.imshow(corr, text_auto=".2f", color_continuous_scale="RdBu_r"), use_container_width=True)
+            guide.chart("m1_corr")
     else:
         st.info("Chargez un jeu de donnees pour commencer.")
 
 # ---------------------------------------------------------------- Module 2
 elif page == "2. Preparation":
     st.title("Module 2 - Preparation")
+    guide.page("m2")
+    guide.terms(["feature / variable", "identifier (customerID)", "data leakage", "imputation",
+                 "one-hot encoding", "normalisation (StandardScaler)", "train / test split",
+                 "stratification", "pipeline", "missing values (NaN)"])
     df = st.session_state["df"]
     if df is None:
         st.warning("Retournez au Module 1 pour charger des donnees.")
@@ -104,10 +122,12 @@ elif page == "2. Preparation":
             default=[c for c in data_mod.ID_COLUMNS if c in candidate_features],
         )
         feature_cols = [c for c in candidate_features if c not in excluded]
+        guide.chart("m2_exclude")
 
         scale = st.checkbox("Normaliser les variables numeriques (StandardScaler)", value=True)
         test_size = st.slider("Proportion du jeu de test", 0.1, 0.5, 0.2, 0.05)
         stratify = st.checkbox("Stratifier selon la variable cible", value=True)
+        guide.chart("m2_options")
 
         if st.button("Appliquer la preparation"):
             work_df = df.dropna(subset=[target_col]).copy()
@@ -145,10 +165,16 @@ elif page == "2. Preparation":
 
         if st.session_state["X_train"] is not None:
             st.info("Donnees preparees et prêtes pour le Module 3.")
+            guide.chart("m2_result")
 
 # ---------------------------------------------------------------- Module 3
 elif page == "3. Modelisation":
     st.title("Module 3 - Modelisation et comparaison")
+    guide.page("m3")
+    guide.terms(["model", "training", "logistic regression", "decision tree", "k-NN (k nearest neighbours)",
+                 "Random Forest", "XGBoost", "hyperparameters", "C", "max_depth", "min_samples_leaf",
+                 "n_neighbors", "n_estimators", "learning_rate", "RandomizedSearchCV", "cross-validation",
+                 "overfitting"])
     if st.session_state["X_train"] is None:
         st.warning("Completez le Module 2 avant d'entrainer des modeles.")
     else:
@@ -158,6 +184,7 @@ elif page == "3. Modelisation":
             default=list(models_mod.MODEL_REGISTRY.keys()),
         )
         optimize = st.checkbox("Optimiser les hyperparametres (RandomizedSearchCV)", value=False)
+        guide.chart("m3_settings")
 
         params_by_model = {}
         if not optimize:
@@ -201,11 +228,15 @@ elif page == "3. Modelisation":
                 {name: info["params"] for name, info in trained_models.items()}
             ).transpose()
             st.dataframe(summary)
+            guide.chart("m3_table")
             st.caption("Passez au Module 4 pour comparer les performances.")
 
 # ---------------------------------------------------------------- Module 4
 elif page == "4. Evaluation":
     st.title("Module 4 - Evaluation")
+    guide.page("m4")
+    guide.terms(["probability", "threshold", "accuracy", "precision", "recall", "F1", "AUC-ROC", "ROC curve",
+                 "PR-AUC", "confusion matrix", "true / false positive / negative", "export"])
     trained_models = st.session_state["trained_models"]
     if not trained_models:
         st.warning("Entrainez au moins un modele dans le Module 3.")
@@ -217,15 +248,19 @@ elif page == "4. Evaluation":
         }
 
         threshold = st.slider("Seuil de decision", 0.0, 1.0, 0.5, 0.01)
+        guide.chart("m4_threshold")
 
         st.subheader("Tableau comparatif")
         st.dataframe(eval_mod.metrics_table(models_proba, y_test, threshold))
+        guide.chart("m4_table")
 
         col1, col2 = st.columns(2)
         with col1:
             st.plotly_chart(eval_mod.roc_overlay_figure(models_proba, y_test), use_container_width=True)
+            guide.chart("m4_roc")
         with col2:
             st.plotly_chart(eval_mod.pr_curve_figure(models_proba, y_test), use_container_width=True)
+            guide.chart("m4_pr")
 
         st.subheader("Matrice de confusion par modele")
         model_for_cm = st.selectbox("Modele", list(trained_models.keys()))
@@ -233,6 +268,7 @@ elif page == "4. Evaluation":
             eval_mod.confusion_matrix_figure(y_test, models_proba[model_for_cm], threshold),
             use_container_width=True,
         )
+        guide.chart("m4_cm")
 
         st.subheader("Effet du seuil en direct")
         live = eval_mod.threshold_metrics(y_test, models_proba[model_for_cm], threshold)
@@ -240,8 +276,10 @@ elif page == "4. Evaluation":
         m1.metric("Precision", f"{live['precision']:.3f}")
         m2.metric("Rappel", f"{live['rappel']:.3f}")
         m3.metric("F1", f"{live['F1']:.3f}")
+        guide.chart("m4_live")
 
         st.subheader("Exporter pour le Module 5 / l'API")
+        guide.chart("m4_export")
         export_choice = st.selectbox("Modele a exporter", list(trained_models.keys()), key="export_choice")
         if st.button("Exporter ce modele"):
             X_train = st.session_state["X_train"]
@@ -267,6 +305,11 @@ elif page == "4. Evaluation":
 # ---------------------------------------------------------------- Module 5
 elif page == "5. Explicabilite":
     st.title("Module 5 - Explainable AI")
+    guide.page("m5")
+    guide.terms(["XAI (explainable AI)", "global explanation", "local explanation", "native importance",
+                 "permutation importance", "SHAP", "SHAP value", "beeswarm", "dependence plot", "waterfall",
+                 "LIME", "SHAP vs LIME comparison", "rank correlation (Spearman)", "synthesis sentence",
+                 "one-hot encoding", "API"])
 
     try:
         health = requests.get(f"{API_URL}/health", timeout=2).json()
@@ -300,16 +343,19 @@ elif page == "5. Explicabilite":
                     viz_mod.bar_importance_figure(g["native_importance"], "Importance native du modele"),
                     use_container_width=True,
                 )
+                guide.chart("m5_native")
             with col2:
                 st.plotly_chart(
                     viz_mod.bar_importance_figure(g["permutation_importance"], "Importance par permutation"),
                     use_container_width=True,
                 )
+                guide.chart("m5_perm")
 
             st.plotly_chart(
                 viz_mod.beeswarm_figure(g["shap_values"], g["shap_feature_values"], g["shap_feature_names"]),
                 use_container_width=True,
             )
+            guide.chart("m5_beeswarm")
 
             top_feature = pd.Series(g["permutation_importance"]).sort_values(ascending=False).index[0]
             feature_choice = st.selectbox(
@@ -322,6 +368,7 @@ elif page == "5. Explicabilite":
                 ),
                 use_container_width=True,
             )
+            guide.chart("m5_dependence")
 
     with tab_local:
         schema = requests.get(f"{API_URL}/schema", timeout=10).json()
@@ -330,6 +377,7 @@ elif page == "5. Explicabilite":
 
         X_test = st.session_state.get("X_test")
         use_test_individual = X_test is not None and st.checkbox("Choisir un individu du jeu de test", value=True)
+        guide.chart("m5_choose")
 
         if use_test_individual:
             idx = st.selectbox("Index (jeu de test)", X_test.index.tolist())
@@ -367,12 +415,15 @@ elif page == "5. Explicabilite":
             m2.metric("Decision (seuil)", decision_label)
 
             st.info(resp["synthesis"])
+            guide.chart("m5_result")
 
             col1, col2 = st.columns(2)
             with col1:
                 st.plotly_chart(viz_mod.waterfall_figure(resp["shap"]), use_container_width=True)
+                guide.chart("m5_waterfall")
             with col2:
                 st.plotly_chart(viz_mod.lime_bar_figure(resp["lime"]), use_container_width=True)
+                guide.chart("m5_lime")
 
             comp = resp.get("comparison")
             if comp:
@@ -393,3 +444,4 @@ elif page == "5. Explicabilite":
                     hide_index=True,
                     use_container_width=True,
                 )
+                guide.chart("m5_compare")
